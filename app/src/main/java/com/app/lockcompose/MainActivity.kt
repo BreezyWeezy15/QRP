@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
 
         requestCameraPermission()
 
-        //SharedPreferencesHelper.deleteDeviceInfoList(this)
+        SharedPreferencesHelper.deleteDeviceInfoList(this)
         setContent {
             LockComposeTheme {
                 val navController = rememberNavController()

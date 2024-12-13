@@ -8,11 +8,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.app.lockcompose.R
@@ -52,17 +57,12 @@ import com.google.zxing.integration.android.IntentIntegrator
 @Composable
 fun Profiles(navController: NavController) {
     val context = LocalContext.current
-
-    // Get the list of available devices
+    val iconColor = if (isSystemInDarkTheme()) Color.White else Color.Black
     var availableDevices by remember { mutableStateOf(SharedPreferencesHelper.getDeviceInfoList(context)) }
-
-    // Initialize selectedDevice from SharedPreferences if available
     val selectedDevice = remember { mutableStateOf<DeviceInfo?>(SharedPreferencesHelper.getSelectedDevice(context)) }
-
     val showRenameDialog = remember { mutableStateOf(false) }
     val newDeviceName = remember { mutableStateOf("") }
 
-    // Launcher for scanning the QR code
     val scanLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val intentResult = IntentIntegrator.parseActivityResult(result.resultCode, result.data)
         if (intentResult != null && intentResult.contents != null) {
@@ -93,7 +93,6 @@ fun Profiles(navController: NavController) {
         }
     }
 
-    // Observe changes to the SharedPreferences and update the state
     LaunchedEffect(Unit) {
         availableDevices = SharedPreferencesHelper.getDeviceInfoList(context)
     }
@@ -113,7 +112,7 @@ fun Profiles(navController: NavController) {
                             painter = painterResource(id = R.drawable.scan),
                             contentDescription = "Scan QR Code",
                             modifier = Modifier.size(20.dp),
-                            tint = Color.White
+                            tint = iconColor
                         )
                     }
                 }
@@ -137,53 +136,82 @@ fun Profiles(navController: NavController) {
             }
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
         ) {
-            Text(
-                text = "Available Devices",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            if (availableDevices.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.scan),
+                        contentDescription = "No Devices",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No devices available. Tap the scan icon to add new devices.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Available Devices",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-            LazyColumn {
-                items(availableDevices) { device ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selectedDevice.value = device
-                            }
-                            .padding(8.dp)
-                            .combinedClickable(
-                                onClick = {
-                                    selectedDevice.value = device
-                                },
-                                onLongClick = {
-                                    newDeviceName.value = device.deviceName
-                                    showRenameDialog.value = true
+                    LazyColumn {
+                        items(availableDevices) { device ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedDevice.value = device
+                                    }
+                                    .padding(8.dp)
+                                    .combinedClickable(
+                                        onClick = {
+                                            selectedDevice.value = device
+                                        },
+                                        onLongClick = {
+                                            newDeviceName.value = device.deviceName
+                                            showRenameDialog.value = true
+                                        }
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedDevice.value == device,
+                                    onClick = { selectedDevice.value = device }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = device.deviceName,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = device.deviceId,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
                                 }
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selectedDevice.value == device,
-                            onClick = { selectedDevice.value = device }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = device.deviceName,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = device.deviceId,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
-                            )
+                            }
                         }
                     }
                 }
@@ -204,8 +232,6 @@ fun Profiles(navController: NavController) {
                         add(updatedDevice)
                     }
                     SharedPreferencesHelper.saveDeviceInfoList(context, updatedDeviceList)
-
-                    // Update the list immediately in the UI
                     availableDevices = updatedDeviceList
                 }
                 showRenameDialog.value = false
@@ -244,3 +270,4 @@ fun RenameDeviceDialog(
         }
     )
 }
+
