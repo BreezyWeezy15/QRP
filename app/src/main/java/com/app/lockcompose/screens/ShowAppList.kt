@@ -95,11 +95,10 @@ fun ShowAppList() {
         return interval.replace(" min", "").toIntOrNull() ?: 0
     }
 
-    // Load apps from Firebase on component launch
     LaunchedEffect(Unit) {
         loadAppsFromFirebase(context) { apps ->
             availableApps.value = apps
-            isLoading.value = false  // Set loading to false once data is fetched
+            isLoading.value = false
         }
     }
 
@@ -273,7 +272,8 @@ fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) ->
 
 data class DeviceInfo(
     val deviceName: String,
-    val deviceId: String
+    val deviceId: String,
+    var profile: String = "Not Set" // Default value is "Not Set"
 )
 
 fun deleteAllAppsFromFirebase(context: Context) {
@@ -420,3 +420,4 @@ fun sendSelectedAppsToFirebase(selectedApps: List<InstalledApp>, selectedInterva
 
 
 }
+

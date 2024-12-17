@@ -2,6 +2,7 @@ package com.app.lockcompose.screens
 
 import DeviceInfo
 import android.annotation.SuppressLint
+import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,7 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.app.lockcompose.R
 import com.app.lockcompose.SharedPreferencesHelper
+import com.google.firebase.database.FirebaseDatabase
 import com.google.zxing.integration.android.IntentIntegrator
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -79,8 +82,6 @@ fun Profiles(navController: NavController) {
                 if (deviceInfoList.none { it.deviceId == newDeviceInfo.deviceId }) {
                     deviceInfoList.add(newDeviceInfo)
                     SharedPreferencesHelper.saveDeviceInfoList(context, deviceInfoList)
-
-                    // Update the UI with the new device immediately
                     availableDevices = deviceInfoList
                 } else {
                     Toast.makeText(context, "Device already exists: $deviceName\nID: $deviceId", Toast.LENGTH_SHORT).show()
@@ -119,20 +120,39 @@ fun Profiles(navController: NavController) {
             )
         },
         bottomBar = {
-            Button(
-                onClick = {
-                    selectedDevice.value?.let { device ->
-                        SharedPreferencesHelper.saveSelectedDevice(context, device)
-                        Toast.makeText(context, "Device saved: ${device.deviceName}", Toast.LENGTH_SHORT).show()
-                    } ?: Toast.makeText(context, "Please select a device", Toast.LENGTH_SHORT).show()
-
-                    navController.popBackStack()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Confirm")
+                Button(
+                    onClick = {
+                        selectedDevice.value?.let { device ->
+                            navController.navigate("addProfile/${device.deviceId}")
+                        } ?: Toast.makeText(context, "Please select a device", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .height(55.dp), // Increase the height here
+                ) {
+                    Text("Edit Profile")
+                }
+
+                Button(
+                    onClick = {
+                          if(SharedPreferencesHelper.getSelectedDevice(context) != null){
+                              sendProfileInfo(context)
+                          } else {
+                              Toast.makeText(context,"Please select a device",Toast.LENGTH_SHORT).show()
+                          }
+                          navController.popBackStack()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(55.dp),
+                ) {
+                    Text("Confirm")
+                }
             }
         }
     ) { paddingValues ->
@@ -197,7 +217,13 @@ fun Profiles(navController: NavController) {
                             ) {
                                 RadioButton(
                                     selected = selectedDevice.value == device,
-                                    onClick = { selectedDevice.value = device }
+                                    onClick = {
+                                        selectedDevice.value = device
+                                        selectedDevice.value?.let { selected ->
+                                            SharedPreferencesHelper.saveSelectedDevice(context, selected)
+                                            Toast.makeText(context, "Device saved: ${selected.deviceName}", Toast.LENGTH_SHORT).show()
+                                        } ?: Toast.makeText(context, "Please select a device", Toast.LENGTH_SHORT).show()
+                                    }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
@@ -210,6 +236,12 @@ fun Profiles(navController: NavController) {
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color.Gray
                                     )
+                                    // Display the profile, or "Not Set" if it's empty
+                                    Text(
+                                        text = "Profile: ${device.profile}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
                                 }
                             }
                         }
@@ -218,6 +250,7 @@ fun Profiles(navController: NavController) {
             }
         }
     }
+
 
     if (showRenameDialog.value) {
         RenameDeviceDialog(
@@ -271,3 +304,18 @@ fun RenameDeviceDialog(
     )
 }
 
+fun sendProfileInfo(context: Context) {
+
+    val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
+        .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId.toLowerCase(Locale.ROOT))
+
+    firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
+        .addOnSuccessListener {
+
+        }
+        .addOnFailureListener { e ->
+            Toast.makeText(context, "Error", Toast.LENGTH_LONG).show()
+        }
+
+
+}
