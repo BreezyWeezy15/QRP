@@ -1,16 +1,15 @@
 package com.app.lockcompose.screens
 
 import DeviceInfo
-import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,10 +43,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.app.lockcompose.R
@@ -62,7 +61,7 @@ fun Profiles(navController: NavController) {
     val context = LocalContext.current
     val iconColor = if (isSystemInDarkTheme()) Color.White else Color.Black
     var availableDevices by remember { mutableStateOf(SharedPreferencesHelper.getDeviceInfoList(context)) }
-    val selectedDevice = remember { mutableStateOf<DeviceInfo?>(SharedPreferencesHelper.getSelectedDevice(context)) }
+    val selectedDevice = remember { mutableStateOf(SharedPreferencesHelper.getSelectedDevice(context)) }
     val showRenameDialog = remember { mutableStateOf(false) }
     val newDeviceName = remember { mutableStateOf("") }
 
@@ -94,14 +93,18 @@ fun Profiles(navController: NavController) {
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(availableDevices) {
         availableDevices = SharedPreferencesHelper.getDeviceInfoList(context)
+        if (availableDevices.size == 1 && selectedDevice.value == null) {
+            selectedDevice.value = availableDevices.first()
+            SharedPreferencesHelper.saveSelectedDevice(context, selectedDevice.value!!)
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Devices") },
+                title = { Text("Available Devices") },
                 actions = {
                     IconButton(onClick = {
                         val integrator = IntentIntegrator(context as android.app.Activity)
@@ -132,19 +135,19 @@ fun Profiles(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .height(55.dp), // Increase the height here
+                        .height(55.dp),
                 ) {
                     Text("Edit Profile")
                 }
 
                 Button(
                     onClick = {
-                          if(SharedPreferencesHelper.getSelectedDevice(context) != null){
-                              sendProfileInfo(context)
-                          } else {
-                              Toast.makeText(context,"Please select a device",Toast.LENGTH_SHORT).show()
-                          }
-                          navController.popBackStack()
+                        if (SharedPreferencesHelper.getSelectedDevice(context) != null) {
+                            sendProfileInfo(context)
+                        } else {
+                            Toast.makeText(context, "Please select a device", Toast.LENGTH_SHORT).show()
+                        }
+                        navController.popBackStack()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -162,38 +165,20 @@ fun Profiles(navController: NavController) {
                 .padding(paddingValues)
         ) {
             if (availableDevices.isEmpty()) {
-                Column(
+                Image(
+                    painter = painterResource(id = R.drawable.no_device),
+                    contentDescription = "no_device",
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.scan),
-                        contentDescription = "No Devices",
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No devices available. Tap the scan icon to add new devices.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+                        .size(100.dp)
+                        .align(Alignment.Center),
+                    colorFilter = ColorFilter.tint(Color(0xFFFFA500))
+                )
             } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = "Available Devices",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
 
                     LazyColumn {
                         items(availableDevices) { device ->
@@ -236,7 +221,6 @@ fun Profiles(navController: NavController) {
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color.Gray
                                     )
-                                    // Display the profile, or "Not Set" if it's empty
                                     Text(
                                         text = "Profile: ${device.profile}",
                                         style = MaterialTheme.typography.bodySmall,
@@ -259,19 +243,21 @@ fun Profiles(navController: NavController) {
             onDismiss = { showRenameDialog.value = false },
             onConfirm = {
                 selectedDevice.value?.let { device ->
-                    val updatedDevice = device.copy(deviceName = newDeviceName.value)
-                    val updatedDeviceList = availableDevices.toMutableList().apply {
-                        remove(device)
-                        add(updatedDevice)
+                    val updatedDevice = device.copy(deviceName = newDeviceName.value, profile = device.profile)
+                    val updatedDeviceList = availableDevices.map {
+                        if (it.deviceId == device.deviceId) updatedDevice else it
                     }
                     SharedPreferencesHelper.saveDeviceInfoList(context, updatedDeviceList)
+                    SharedPreferencesHelper.saveSelectedDevice(context, updatedDevice)
                     availableDevices = updatedDeviceList
-                }
+                    Toast.makeText(context, "Device renamed to ${newDeviceName.value}", Toast.LENGTH_SHORT).show()
+                } ?: Toast.makeText(context, "No device selected", Toast.LENGTH_SHORT).show()
                 showRenameDialog.value = false
             }
         )
     }
 }
+
 
 @Composable
 fun RenameDeviceDialog(

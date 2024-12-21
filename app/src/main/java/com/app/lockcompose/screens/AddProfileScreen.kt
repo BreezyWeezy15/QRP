@@ -37,11 +37,7 @@ import com.app.lockcompose.SharedPreferencesHelper
 @Composable
 fun AddProfileScreen(navController: NavController, backStackEntry: NavBackStackEntry) {
     val context = LocalContext.current
-
-    // Extract the deviceId from the navigation arguments
     val deviceId = backStackEntry.arguments?.getString("deviceId")
-
-    // Check if deviceId is null, handle gracefully
     if (deviceId == null) {
         Toast.makeText(context, "No device selected", Toast.LENGTH_SHORT).show()
         return
@@ -93,19 +89,22 @@ fun AddProfileScreen(navController: NavController, backStackEntry: NavBackStackE
                             imageRes = profile.imageRes,
                             title = profile.title,
                             onClick = {
-                                // Save selected profile globally
                                 SharedPreferencesHelper.saveSelectedProfile(context, profile.title)
-
                                 SharedPreferencesHelper.saveProfileForDevice(context, deviceId, profile.title)
 
-                                // Manage Rules button for Custom profile
-                                if (profile.title == "Custom") {
-                                    SharedPreferencesHelper.setRulesButtonEnabled(context, true)
-                                    Toast.makeText(context, "Custom Profile Selected", Toast.LENGTH_SHORT).show()
+
+                                val rulesButtonEnabled = profile.title == "Custom"
+                                SharedPreferencesHelper.setRulesButtonEnabled(context, rulesButtonEnabled)
+
+
+                                val feedback = if (rulesButtonEnabled) {
+                                    "Custom Profile Selected"
                                 } else {
-                                    SharedPreferencesHelper.setRulesButtonEnabled(context, false)
-                                    Toast.makeText(context, "${profile.title} Profile Selected", Toast.LENGTH_SHORT).show()
+                                    "${profile.title} Profile Selected"
                                 }
+                                Toast.makeText(context, feedback, Toast.LENGTH_SHORT).show()
+
+                                navController.popBackStack()
                             }
                         )
                     }

@@ -84,7 +84,7 @@ fun ShowAppList() {
 
     val availableApps = remember { mutableStateOf<List<InstalledApp>>(emptyList()) }
     val selectedApps = remember { mutableStateListOf<InstalledApp>() }
-    val isLoading = remember { mutableStateOf(true) }  // Loading state
+    val isLoading = remember { mutableStateOf(true) }
 
     var expanded by remember { mutableStateOf(false) }
     var selectedInterval by remember { mutableStateOf("Select Interval") }
@@ -140,7 +140,6 @@ fun ShowAppList() {
                     .padding(paddingValues)
                     .padding(16.dp)
             ) {
-                // Spinner for time interval
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },
@@ -183,7 +182,6 @@ fun ShowAppList() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Display list of apps
                 LazyColumn(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -202,7 +200,6 @@ fun ShowAppList() {
                     }
                 }
 
-                // PIN Code Input
                 TextField(
                     value = pinCode,
                     onValueChange = { pinCode = it },
@@ -212,7 +209,6 @@ fun ShowAppList() {
                         .padding(vertical = 16.dp)
                 )
 
-                // Button at the bottom
                 Button(
                     onClick = {
                         if (pinCode.isNotEmpty() && selectedApps.isNotEmpty() && selectedInterval != "Select Interval") {
@@ -226,7 +222,7 @@ fun ShowAppList() {
                         .fillMaxWidth()
                         .height(60.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF3F51B5)), // Indigo color
-                    shape = RoundedCornerShape(0.dp) // No corners
+                    shape = RoundedCornerShape(0.dp)
                 ) {
                     Text(
                         text = "Send Rules",
@@ -273,7 +269,7 @@ fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) ->
 data class DeviceInfo(
     val deviceName: String,
     val deviceId: String,
-    var profile: String = "Not Set" // Default value is "Not Set"
+    var profile: String = "Not Set"
 )
 
 fun deleteAllAppsFromFirebase(context: Context) {
@@ -371,8 +367,6 @@ fun drawableToByteArray(drawable: Drawable): ByteArray {
     return stream.toByteArray()
 }
 
-
-
 fun base64ToDrawable(context: Context, base64String: String): Drawable {
     val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
     val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
@@ -380,17 +374,22 @@ fun base64ToDrawable(context: Context, base64String: String): Drawable {
 }
 
 
-fun sendSelectedAppsToFirebase(selectedApps: List<InstalledApp>, selectedInterval: Int,
-                               pinCode: String, context: Context) {
-
-    if (SharedPreferencesHelper.getSelectedDevice(context) == null){
-        Toast.makeText(context,"Please pick a device",Toast.LENGTH_SHORT).show()
+fun sendSelectedAppsToFirebase(
+    selectedApps: List<InstalledApp>,
+    selectedInterval: Int,
+    pinCode: String,
+    context: Context
+) {
+    val selectedDevice = SharedPreferencesHelper.getSelectedDevice(context)
+    if (selectedDevice == null) {
+        Toast.makeText(context, "Please pick a device", Toast.LENGTH_SHORT).show()
     } else {
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
-            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId.toLowerCase(Locale.ROOT))
+            .child(selectedDevice.deviceId.toLowerCase(Locale.ROOT))
 
-        firebaseDatabase.child("type").setValue("new data")
+        firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
             .addOnSuccessListener {
+
                 selectedApps.forEach { app ->
                     val iconByteArray = drawableToByteArray(app.appIcon)
 
@@ -399,25 +398,26 @@ fun sendSelectedAppsToFirebase(selectedApps: List<InstalledApp>, selectedInterva
                         "name" to app.appName,
                         "interval" to selectedInterval.toString(),
                         "pin_code" to pinCode,
-                        "icon" to iconByteArray.let { android.util.Base64.encodeToString(it, android.util.Base64.DEFAULT) }
+                        "icon" to android.util.Base64.encodeToString(iconByteArray, android.util.Base64.DEFAULT)
                     )
 
                     firebaseDatabase.child(app.appName.lowercase(Locale.ROOT)).setValue(appData)
                         .addOnSuccessListener {
-                            Toast.makeText(context, "uploaded successfully", LENGTH_SHORT).show()
+                            Toast.makeText(context, "Uploaded successfully", Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener { e ->
-                            Toast.makeText(context, "Error uploading ${app.appName}: ${e.message}", LENGTH_LONG).show()
+                            Toast.makeText(context, "Error uploading ${app.appName}: ${e.message}", Toast.LENGTH_LONG).show()
                         }
-
-
                 }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Error", LENGTH_LONG).show()
+                Toast.makeText(context, "Failed to set profile type: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
-
-
 }
+
+
+
+
+
 
