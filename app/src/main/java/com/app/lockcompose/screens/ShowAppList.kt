@@ -387,7 +387,7 @@ fun sendSelectedAppsToFirebase(
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
             .child(selectedDevice.deviceId.toLowerCase(Locale.ROOT))
 
-        firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
+        firebaseDatabase.child("type").setValue("Custom")
             .addOnSuccessListener {
 
                 selectedApps.forEach { app ->

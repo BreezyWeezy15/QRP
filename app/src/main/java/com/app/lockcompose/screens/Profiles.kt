@@ -2,6 +2,7 @@ package com.app.lockcompose.screens
 
 import DeviceInfo
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -292,16 +293,17 @@ fun RenameDeviceDialog(
 
 fun sendProfileInfo(context: Context) {
 
-    val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
-        .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId.toLowerCase(Locale.ROOT))
+    if(SharedPreferencesHelper.getSelectedProfile(context) != "Custom"){
+        val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
+            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId.toLowerCase(Locale.ROOT))
 
-    firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
-        .addOnSuccessListener {
+        firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
+            .addOnSuccessListener {
 
-        }
-        .addOnFailureListener { e ->
-            Toast.makeText(context, "Error", Toast.LENGTH_LONG).show()
-        }
-
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Error", Toast.LENGTH_LONG).show()
+            }
+    }
 
 }
