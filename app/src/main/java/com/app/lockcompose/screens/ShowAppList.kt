@@ -1,5 +1,6 @@
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -7,9 +8,11 @@ import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -100,6 +103,7 @@ fun ShowAppList() {
             availableApps.value = apps
             isLoading.value = false
         }
+        getPermission(context)
     }
 
     Scaffold(
@@ -234,6 +238,62 @@ fun ShowAppList() {
         }
 
     }
+}
+
+fun getPermission(context: Context){
+
+    val firebaseDatabase = FirebaseDatabase.getInstance().reference
+    firebaseDatabase
+        .child("Permissions")
+        .get()
+        .addOnSuccessListener { dataSnapShot ->
+            if (dataSnapShot.exists()){
+                val data = dataSnapShot.child("answer").getValue(String::class.java)
+                if(!data.isNullOrEmpty()){
+                    showDialog(context = context)
+                }
+            }
+        }
+        .addOnFailureListener {
+            Log.d("TAG","Failed to send permission")
+        }
+
+}
+
+fun showDialog(context: Context) {
+
+    AlertDialog.Builder(context)
+        .setTitle("Parent Permission")
+        .setMessage("Let child use the phone")
+        .setPositiveButton("Yes",object : DialogInterface.OnClickListener {
+            override fun onClick(dialog: DialogInterface?, which: Int) {
+                updatePermission("Yes")
+            }
+        })
+        .setNegativeButton("No",object : DialogInterface.OnClickListener {
+            override fun onClick(dialog: DialogInterface?, which: Int) {
+                updatePermission("No")
+            }
+        })
+        .create()
+        .show()
+
+}
+fun updatePermission(answer : String){
+
+    val map = hashMapOf<String,Any>()
+    map["answer"] = answer
+
+    val firebaseDatabase = FirebaseDatabase.getInstance().reference
+    firebaseDatabase
+        .child("Permissions")
+        .setValue(map)
+        .addOnSuccessListener {
+
+        }
+        .addOnFailureListener {
+            Log.d("TAG","Failed to send permission")
+        }
 }
 
 fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
