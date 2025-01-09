@@ -16,17 +16,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         when (intent.action) {
             "ACTION_YES" -> {
-                updatePermission("Yes")
+                updatePermission(context,"Yes")
                 notificationManager.cancel(1)
             }
             "ACTION_NO" -> {
-                updatePermission( "No")
+                updatePermission( context,"No")
                 notificationManager.cancel(1)
             }
         }
     }
 
-    private fun updatePermission(answer: String) {
+    private fun updatePermission(context: Context,answer: String) {
         val map = hashMapOf<String, Any>()
         map["answer"] = answer
         map["type"] = "Custom"
@@ -34,6 +34,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         val firebaseDatabase = FirebaseDatabase.getInstance().reference
         firebaseDatabase
             .child("Permissions")
+            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
             .setValue(map)
             .addOnSuccessListener {
                 Log.d("TAG", "Permission updated to $answer")

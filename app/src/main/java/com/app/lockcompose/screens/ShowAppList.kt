@@ -268,12 +268,14 @@ fun ShowAppList() {
     }
 }
 
-private val CHANNEL_ID = "parent_permission_channel"
-private val NOTIFICATION_ID = 1
+private const val CHANNEL_ID = "parent_permission_channel"
+private const val NOTIFICATION_ID = 1
+
 private fun getPermission(context: Context) {
     val firebaseDatabase = FirebaseDatabase.getInstance().reference
     firebaseDatabase
         .child("Permissions")
+        .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
         .addValueEventListener(object : ValueEventListener {
             override fun onDataChange(dataSnapShot: DataSnapshot) {
                 if (dataSnapShot.exists()) {
@@ -288,6 +290,7 @@ private fun getPermission(context: Context) {
             }
         })
 }
+
 private fun createNotificationChannel(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val name = "Parent Permission Channel"
@@ -301,9 +304,9 @@ private fun createNotificationChannel(context: Context) {
         notificationManager.createNotificationChannel(channel)
     }
 }
+
 @SuppressLint("MissingPermission")
 fun showNotification(context: Context) {
-
 
     createNotificationChannel(context)
 
@@ -341,7 +344,6 @@ fun showNotification(context: Context) {
     }
 
 }
-
 
 fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
     if(SharedPreferencesHelper.getSelectedDevice(context) != null){
@@ -444,7 +446,6 @@ fun rememberDrawablePainter(drawable: Drawable?): Painter {
 }
 
 
-// Data class for installed apps
 data class InstalledApp(
     val appName: String,
     val packageName: String,
