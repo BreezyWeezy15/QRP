@@ -117,7 +117,6 @@ fun ShowAppList() {
             availableApps.value = apps
             isLoading.value = false
         }
-        getPermission(context)
     }
 
     Scaffold(
@@ -267,82 +266,13 @@ fun ShowAppList() {
     }
 }
 
-fun getPermission(context: Context) {
-    val firebaseDatabase = FirebaseDatabase.getInstance().reference
-    firebaseDatabase
-        .child("Permissions")
-        .addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapShot: DataSnapshot) {
-                if (dataSnapShot.exists()) {
-                    val data = dataSnapShot.child("answer").getValue(String::class.java)
-                    if (!data.isNullOrEmpty()) {
-                        showNotification(context)
-                    }
-                }
-            }
-            override fun onCancelled(error: DatabaseError) {
 
-            }
-        })
-}
 
-const val CHANNEL_ID = "parent_permission_channel"
-const val NOTIFICATION_ID = 1
 @SuppressLint("MissingPermission")
-fun showNotification(context: Context) {
 
 
-    createNotificationChannel(context)
-
-    val yesIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-        action = "ACTION_YES"
-    }
-    val yesPendingIntent: PendingIntent = PendingIntent.getBroadcast(
-        context,
-        0,
-        yesIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val noIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-        action = "ACTION_NO"
-    }
-    val noPendingIntent: PendingIntent = PendingIntent.getBroadcast(
-        context,
-        1,
-        noIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle("Parent Permission")
-        .setContentText("Allow the child to use the phone?")
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setAutoCancel(true)
-        .addAction(NotificationCompat.Action(0, "Yes", yesPendingIntent))
-        .addAction(NotificationCompat.Action(0, "No", noPendingIntent))
-
-    with(NotificationManagerCompat.from(context)) {
-        notify(NOTIFICATION_ID, builder.build())
-    }
-
-}
 
 
-fun createNotificationChannel(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = "Parent Permission Channel"
-        val descriptionText = "Channel for parent permission notifications"
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-            description = descriptionText
-        }
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-}
 
 
 fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
