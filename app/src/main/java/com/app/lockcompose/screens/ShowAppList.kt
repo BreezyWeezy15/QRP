@@ -1,18 +1,26 @@
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,7 +78,13 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
+import com.app.lockcompose.NotificationActionReceiver
 import com.app.lockcompose.SharedPreferencesHelper
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -217,15 +231,28 @@ fun ShowAppList() {
                     onClick = {
                         if (pinCode.isNotEmpty() && selectedApps.isNotEmpty() && selectedInterval != "Select Interval") {
                             val intervalInMinutes = parseInterval(selectedInterval)
-                            sendSelectedAppsToFirebase(selectedApps, intervalInMinutes, pinCode, context)
+                            sendSelectedAppsToFirebase(
+                                selectedApps,
+                                intervalInMinutes,
+                                pinCode,
+                                context
+                            )
                         } else {
-                            Toast.makeText(context, "Please fill all required fields", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Please fill all required fields",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF3F51B5)), // Indigo color
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = androidx.compose.ui.graphics.Color(
+                            0xFF3F51B5
+                        )
+                    ), // Indigo color
                     shape = RoundedCornerShape(0.dp)
                 ) {
                     Text(
@@ -240,61 +267,83 @@ fun ShowAppList() {
     }
 }
 
-fun getPermission(context: Context){
-
+fun getPermission(context: Context) {
     val firebaseDatabase = FirebaseDatabase.getInstance().reference
     firebaseDatabase
         .child("Permissions")
-        .get()
-        .addOnSuccessListener { dataSnapShot ->
-            if (dataSnapShot.exists()){
-                val data = dataSnapShot.child("answer").getValue(String::class.java)
-                if(!data.isNullOrEmpty()){
-                    showDialog(context = context)
+        .addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(dataSnapShot: DataSnapshot) {
+                if (dataSnapShot.exists()) {
+                    val data = dataSnapShot.child("answer").getValue(String::class.java)
+                    if (!data.isNullOrEmpty()) {
+                        showNotification(context)
+                    }
                 }
             }
-        }
-        .addOnFailureListener {
-            Log.d("TAG","Failed to send permission")
-        }
+            override fun onCancelled(error: DatabaseError) {
 
-}
-
-fun showDialog(context: Context) {
-
-    AlertDialog.Builder(context)
-        .setTitle("Parent Permission")
-        .setMessage("Let child use the phone")
-        .setPositiveButton("Yes",object : DialogInterface.OnClickListener {
-            override fun onClick(dialog: DialogInterface?, which: Int) {
-                updatePermission("Yes")
             }
         })
-        .setNegativeButton("No",object : DialogInterface.OnClickListener {
-            override fun onClick(dialog: DialogInterface?, which: Int) {
-                updatePermission("No")
-            }
-        })
-        .create()
-        .show()
+}
+
+const val CHANNEL_ID = "parent_permission_channel"
+const val NOTIFICATION_ID = 1
+@SuppressLint("MissingPermission")
+fun showNotification(context: Context) {
+
+
+    createNotificationChannel(context)
+
+    val yesIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+        action = "ACTION_YES"
+    }
+    val yesPendingIntent: PendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        yesIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val noIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+        action = "ACTION_NO"
+    }
+    val noPendingIntent: PendingIntent = PendingIntent.getBroadcast(
+        context,
+        1,
+        noIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle("Parent Permission")
+        .setContentText("Allow the child to use the phone?")
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setAutoCancel(true)
+        .addAction(NotificationCompat.Action(0, "Yes", yesPendingIntent))
+        .addAction(NotificationCompat.Action(0, "No", noPendingIntent))
+
+    with(NotificationManagerCompat.from(context)) {
+        notify(NOTIFICATION_ID, builder.build())
+    }
 
 }
-fun updatePermission(answer : String){
 
-    val map = hashMapOf<String,Any>()
-    map["answer"] = answer
 
-    val firebaseDatabase = FirebaseDatabase.getInstance().reference
-    firebaseDatabase
-        .child("Permissions")
-        .setValue(map)
-        .addOnSuccessListener {
-
+fun createNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val name = "Parent Permission Channel"
+        val descriptionText = "Channel for parent permission notifications"
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
         }
-        .addOnFailureListener {
-            Log.d("TAG","Failed to send permission")
-        }
+        val notificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
 }
+
 
 fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
     if(SharedPreferencesHelper.getSelectedDevice(context) != null){
