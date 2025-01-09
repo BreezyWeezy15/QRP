@@ -4,6 +4,7 @@ import AddProfileScreen
 import ShowAppList
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -19,13 +20,22 @@ import com.app.lockcompose.ui.theme.LockComposeTheme
 
 
 class MainActivity : ComponentActivity() {
-
     private val cameraPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
+                requestNotificationPermission()
                 Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private val notificationPermissionRequest =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -33,6 +43,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         requestCameraPermission()
+
+
         setContent {
             LockComposeTheme {
                 val navController = rememberNavController()
@@ -48,12 +60,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     private fun requestCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
             cameraPermissionRequest.launch(Manifest.permission.CAMERA)
+        } else {
+            requestNotificationPermission()
         }
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 }
