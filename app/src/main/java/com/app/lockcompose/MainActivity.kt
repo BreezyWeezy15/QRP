@@ -3,6 +3,7 @@ package com.app.lockcompose
 import AddProfileScreen
 import ShowAppList
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -20,8 +21,8 @@ import com.app.lockcompose.ui.theme.LockComposeTheme
 
 
 class MainActivity : ComponentActivity() {
-    private val cameraPermissionRequest =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+
+    private val cameraPermissionRequest = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
                 requestNotificationPermission()
                 Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show()
@@ -29,9 +30,7 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
             }
         }
-
-    private val notificationPermissionRequest =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+    private val notificationPermissionRequest = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
                 Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
             } else {
@@ -43,8 +42,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         requestCameraPermission()
-
-
+        showService()
         setContent {
             LockComposeTheme {
                 val navController = rememberNavController()
@@ -58,8 +56,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+
     }
 
+
+
+    private fun showService(){
+        val intent = Intent(this, FirebaseMonitoringService::class.java)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            startForegroundService(intent)
+        } else {
+           stopService(intent)
+        }
+    }
     private fun requestCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
@@ -78,4 +88,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }

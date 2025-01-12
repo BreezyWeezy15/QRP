@@ -67,7 +67,7 @@ android {
 }
 
 dependencies {
-    implementation ("io.sentry:sentry-android:7.12.0")
+  //  implementation ("io.sentry:sentry-android:7.12.0")
     implementation (libs.gson)
     implementation (libs.core)
     implementation (libs.zxing.android.embedded)

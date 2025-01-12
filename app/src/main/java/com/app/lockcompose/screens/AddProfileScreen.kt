@@ -36,6 +36,7 @@ import com.app.lockcompose.SharedPreferencesHelper
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProfileScreen(navController: NavController, backStackEntry: NavBackStackEntry) {
+
     val context = LocalContext.current
     val deviceId = backStackEntry.arguments?.getString("deviceId")
     if (deviceId == null) {

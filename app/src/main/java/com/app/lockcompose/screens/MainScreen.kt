@@ -66,7 +66,7 @@ fun MainScreen(navController: NavController) {
                     .height(55.dp),
                 enabled = isRulesButtonEnabled,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRulesButtonEnabled) Color(0xFF03DAC5) else Color.Gray // Gray for disabled
+                    containerColor = if (isRulesButtonEnabled) Color(0xFF03DAC5) else Color.Gray
                 ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = ButtonDefaults.elevatedButtonElevation(8.dp)

@@ -2,11 +2,8 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -15,12 +12,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.util.Base64
-import android.util.Log
 import android.widget.Toast
-import android.widget.Toast.LENGTH_LONG
-import android.widget.Toast.LENGTH_SHORT
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +39,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -81,9 +72,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import com.app.lockcompose.FirebaseMonitoringService
 import com.app.lockcompose.NotificationActionReceiver
 import com.app.lockcompose.SharedPreferencesHelper
 import com.google.firebase.database.DataSnapshot
@@ -93,9 +82,12 @@ import com.google.firebase.database.ValueEventListener
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShowAppList() {
+
     val context = LocalContext.current
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -118,7 +110,6 @@ fun ShowAppList() {
             isLoading.value = false
         }
 
-        getPermission(context)
     }
 
     Scaffold(
@@ -268,84 +259,10 @@ fun ShowAppList() {
     }
 }
 
-private const val CHANNEL_ID = "parent_permission_channel"
-private const val NOTIFICATION_ID = 1
 
-private fun getPermission(context: Context) {
-    val firebaseDatabase = FirebaseDatabase.getInstance().reference
-    firebaseDatabase
-        .child("Permissions")
-        .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
-        .addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapShot: DataSnapshot) {
-                if (dataSnapShot.exists()) {
-                    val data = dataSnapShot.child("answer").getValue(String::class.java)
-                    if (!data.isNullOrEmpty()) {
-                        showNotification(context)
-                    }
-                }
-            }
-            override fun onCancelled(error: DatabaseError) {
 
-            }
-        })
-}
 
-private fun createNotificationChannel(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = "Parent Permission Channel"
-        val descriptionText = "Channel for parent permission notifications"
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-            description = descriptionText
-        }
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-}
-
-@SuppressLint("MissingPermission")
-fun showNotification(context: Context) {
-
-    createNotificationChannel(context)
-
-    val yesIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-        action = "ACTION_YES"
-    }
-    val yesPendingIntent: PendingIntent = PendingIntent.getBroadcast(
-        context,
-        0,
-        yesIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val noIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-        action = "ACTION_NO"
-    }
-    val noPendingIntent: PendingIntent = PendingIntent.getBroadcast(
-        context,
-        1,
-        noIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle("Parent Permission")
-        .setContentText("Allow the child to use the phone?")
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setAutoCancel(true)
-        .addAction(NotificationCompat.Action(0, "Yes", yesPendingIntent))
-        .addAction(NotificationCompat.Action(0, "No", noPendingIntent))
-
-    with(NotificationManagerCompat.from(context)) {
-        notify(NOTIFICATION_ID, builder.build())
-    }
-
-}
-
-fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
+private fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
     if(SharedPreferencesHelper.getSelectedDevice(context) != null){
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("applications")
             .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
@@ -381,7 +298,7 @@ data class DeviceInfo(
     var profile: String = "Not Set"
 )
 
-fun deleteAllAppsFromFirebase(context: Context) {
+private fun deleteAllAppsFromFirebase(context: Context) {
     val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
     firebaseDatabase.removeValue().addOnCompleteListener { task ->
         if (task.isSuccessful) {
@@ -445,7 +362,6 @@ fun rememberDrawablePainter(drawable: Drawable?): Painter {
     }
 }
 
-
 data class InstalledApp(
     val appName: String,
     val packageName: String,
@@ -453,7 +369,7 @@ data class InstalledApp(
 )
 
 @SuppressLint("NewApi")
-fun drawableToByteArray(drawable: Drawable): ByteArray {
+private fun drawableToByteArray(drawable: Drawable): ByteArray {
     val bitmap = when (drawable) {
         is BitmapDrawable -> drawable.bitmap
         is AdaptiveIconDrawable -> {
@@ -475,14 +391,13 @@ fun drawableToByteArray(drawable: Drawable): ByteArray {
     return stream.toByteArray()
 }
 
-fun base64ToDrawable(context: Context, base64String: String): Drawable {
+private fun base64ToDrawable(context: Context, base64String: String): Drawable {
     val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
     val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
     return BitmapDrawable(context.resources, bitmap)
 }
 
-
-fun sendSelectedAppsToFirebase(
+private fun sendSelectedAppsToFirebase(
     selectedApps: List<InstalledApp>,
     selectedInterval: Int,
     pinCode: String,

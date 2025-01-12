@@ -2,12 +2,9 @@ package com.app.lockcompose.screens
 
 import DeviceInfo
 import android.content.Context
-import android.content.DialogInterface
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -39,7 +36,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +58,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun Profiles(navController: NavController) {
+
     val context = LocalContext.current
     val iconColor = if (isSystemInDarkTheme()) Color.White else Color.Black
     var availableDevices by remember { mutableStateOf(SharedPreferencesHelper.getDeviceInfoList(context)) }
@@ -72,10 +69,10 @@ fun Profiles(navController: NavController) {
     val scanLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val intentResult = IntentIntegrator.parseActivityResult(result.resultCode, result.data)
         if (intentResult != null && intentResult.contents != null) {
-            val datas = intentResult.contents
+            val datum = intentResult.contents
             try {
                 Toast.makeText(context, "Devices Paired", Toast.LENGTH_LONG).show()
-                val (deviceName, deviceId) = datas.split(",")
+                val (deviceName, deviceId) = datum.split(",")
                 Toast.makeText(context, "$deviceName $deviceId", Toast.LENGTH_LONG).show()
 
                 val newDeviceInfo = DeviceInfo(deviceName = deviceName, deviceId = deviceId)
@@ -268,8 +265,7 @@ fun RenameDeviceDialog(
     deviceName: String,
     onNameChange: (String) -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
+    onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Rename Device") },
@@ -294,11 +290,7 @@ fun RenameDeviceDialog(
     )
 }
 
-
-
-
-
-fun sendProfileInfo(context: Context) {
+private fun sendProfileInfo(context: Context) {
 
     if(SharedPreferencesHelper.getSelectedProfile(context) != "Custom"){
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
@@ -308,7 +300,7 @@ fun sendProfileInfo(context: Context) {
             .addOnSuccessListener {
 
             }
-            .addOnFailureListener { e ->
+            .addOnFailureListener { _ ->
                 Toast.makeText(context, "Error", Toast.LENGTH_LONG).show()
             }
     }
