@@ -265,7 +265,7 @@ fun ShowAppList() {
 private fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
     if(SharedPreferencesHelper.getSelectedDevice(context) != null){
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("applications")
-            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
+            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId!!)
 
         firebaseDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -294,7 +294,7 @@ private fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<Installed
 
 data class DeviceInfo(
     val deviceName: String,
-    val deviceId: String,
+    val deviceId: String?,
     var profile: String = "Not Set"
 )
 
@@ -408,7 +408,7 @@ private fun sendSelectedAppsToFirebase(
         Toast.makeText(context, "Please pick a device", Toast.LENGTH_SHORT).show()
     } else {
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
-            .child(selectedDevice.deviceId.toLowerCase(Locale.ROOT))
+            .child(selectedDevice.deviceId!!.toLowerCase(Locale.ROOT))
 
         firebaseDatabase.child("type").setValue("Custom")
             .addOnSuccessListener {

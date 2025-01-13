@@ -53,7 +53,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         val firebaseDatabase = FirebaseDatabase.getInstance().reference
         firebaseDatabase
             .child("Permissions")
-            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId)
+            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId!!)
             .setValue(map)
             .addOnSuccessListener {
                 Log.d("TAG", "Permission updated to $answer")

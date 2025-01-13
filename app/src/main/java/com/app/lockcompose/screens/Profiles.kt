@@ -218,7 +218,7 @@ fun Profiles(navController: NavController) {
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = device.deviceId,
+                                        text = device.deviceId!!,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color.Gray
                                     )
@@ -294,7 +294,7 @@ private fun sendProfileInfo(context: Context) {
 
     if(SharedPreferencesHelper.getSelectedProfile(context) != "Custom"){
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
-            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId.toLowerCase(Locale.ROOT))
+            .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId!!.toLowerCase(Locale.ROOT))
 
         firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
             .addOnSuccessListener {

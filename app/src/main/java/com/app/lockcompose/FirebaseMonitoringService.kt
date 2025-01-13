@@ -29,25 +29,31 @@ class FirebaseMonitoringService : Service() {
 
     private fun observeFirebaseChanges() {
         val firebaseDatabase = FirebaseDatabase.getInstance().reference
-        firebaseDatabase
-            .child("Permissions")
-            .child(SharedPreferencesHelper.getSelectedDevice(this)!!.deviceId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(dataSnapShot: DataSnapshot) {
-                    if (dataSnapShot.exists()) {
-                        val data = dataSnapShot.child("answer").getValue(String::class.java)
-                        val id = dataSnapShot.child("id").getValue(Long::class.java)
-                        if (!data.isNullOrEmpty() && (id != null && randomId != id)) {
-                            randomId = id
-                            Extras.showReceiverNotification(this@FirebaseMonitoringService)
+
+        if(SharedPreferencesHelper.getSelectedDevice(this) != null){
+            firebaseDatabase
+                .child("Permissions")
+                .child(SharedPreferencesHelper.getSelectedDevice(this)!!.deviceId!!)
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(dataSnapShot: DataSnapshot) {
+                        if (dataSnapShot.exists()) {
+                            val data = dataSnapShot.child("answer").getValue(String::class.java)
+                            val id = dataSnapShot.child("id").getValue(Long::class.java)
+                            if (!data.isNullOrEmpty() && (id != null && randomId != id)) {
+                                randomId = id
+                                Extras.showReceiverNotification(this@FirebaseMonitoringService)
+                            }
                         }
                     }
-                }
 
-                override fun onCancelled(error: DatabaseError) {
-                    Log.d("TAG", "Database Error: ${error.message}")
-                }
-            })
+                    override fun onCancelled(error: DatabaseError) {
+                        Log.d("TAG", "Database Error: ${error.message}")
+                    }
+                })
+        }
+
+
+
     }
 
 
