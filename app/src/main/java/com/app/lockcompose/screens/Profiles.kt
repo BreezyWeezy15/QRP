@@ -298,11 +298,21 @@ private fun sendProfileInfo(context: Context) {
 
         firebaseDatabase.child("type").setValue(SharedPreferencesHelper.getSelectedProfile(context))
             .addOnSuccessListener {
-
+                changeProfile()
             }
             .addOnFailureListener { _ ->
                 Toast.makeText(context, "Error", Toast.LENGTH_LONG).show()
             }
     }
 
+}
+
+
+private fun changeProfile(){
+
+    val map = hashMapOf<String,Long>()
+    map["randomID"] = System.currentTimeMillis()
+    FirebaseDatabase.getInstance().getReference()
+        .child("Profiles")
+        .setValue(map)
 }

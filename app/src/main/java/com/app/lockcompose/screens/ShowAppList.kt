@@ -88,6 +88,7 @@ import java.util.Locale
 @Composable
 fun ShowAppList() {
 
+
     val context = LocalContext.current
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -263,6 +264,7 @@ fun ShowAppList() {
 
 
 private fun loadAppsFromFirebase(context: Context, onAppsLoaded: (List<InstalledApp>) -> Unit) {
+
     if(SharedPreferencesHelper.getSelectedDevice(context) != null){
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("applications")
             .child(SharedPreferencesHelper.getSelectedDevice(context)!!.deviceId!!)
@@ -410,6 +412,8 @@ private fun sendSelectedAppsToFirebase(
         val firebaseDatabase = FirebaseDatabase.getInstance().getReference().child("Apps")
             .child(selectedDevice.deviceId!!.toLowerCase(Locale.ROOT))
 
+        changeProfile()
+
         firebaseDatabase.child("type").setValue("Custom")
             .addOnSuccessListener {
 
@@ -439,7 +443,14 @@ private fun sendSelectedAppsToFirebase(
     }
 }
 
+private fun changeProfile(){
 
+    val map = hashMapOf<String,Long>()
+    map["randomID"] = System.currentTimeMillis()
+     FirebaseDatabase.getInstance().getReference()
+        .child("Profiles")
+        .setValue(map)
+}
 
 
 

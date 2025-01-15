@@ -14,9 +14,7 @@ import com.google.firebase.database.ValueEventListener
 
 class FirebaseMonitoringService : Service() {
 
-
     private var randomId = 0L
-
 
     override fun onCreate() {
         super.onCreate()
